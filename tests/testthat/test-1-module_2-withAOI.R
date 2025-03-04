@@ -1,14 +1,18 @@
 
 if (!testthat::is_testing()) source(testthat::test_path("setup.R"))
 
-test_that("Module runs with defaults", {
+test_that("Module runs with study AOI", {
 
   ## Run simInit and spades ----
 
   # Set project path
-  projectPath <- file.path(spadesTestPaths$temp$projects, "1-defaults")
+  projectPath <- file.path(spadesTestPaths$temp$projects, "2-withAOI")
   dir.create(projectPath)
   withr::local_dir(projectPath)
+
+  # Set master raster CRS
+  masterRasterCRS <- terra::crs(
+    paste(readLines(file.path(spadesTestPaths$testdata, "masterRasterCRS.prj")), collapse = "\n"))
 
   # Set up project
   simInitInput <- SpaDEStestMuffleOutput(
@@ -25,14 +29,21 @@ test_that("Module runs with defaults", {
         outputPath  = file.path(projectPath, "outputs")
       ),
 
-      require = "sf",
+      require = c("sf", "terra", "reproducible"),
 
       dbPath     = file.path(spadesTestPaths$temp$inputs, "dbPath.db"),
       ecoLocator = sf::st_read(file.path(spadesTestPaths$testdata, "ecoLocator.shp"), quiet = TRUE),
       spuLocator = sf::st_read(file.path(spadesTestPaths$testdata, "spuLocator.shp"), quiet = TRUE),
       dMatrixAssociation = read.csv(file.path(spadesTestPaths$testdata, "disturbance_matrix_association.csv")),
       spinupSQL  = read.csv(file.path(spadesTestPaths$testdata, "spinupSQL.csv")),
-      species_tr = read.csv(file.path(spadesTestPaths$testdata, "species_tr.csv"))
+      species_tr = read.csv(file.path(spadesTestPaths$testdata, "species_tr.csv")),
+
+      masterRaster = terra::rast(
+        vals = 1L,
+        res  = 250,
+        ext  = c(xmin = -1653000, xmax = -1553000, ymin = 7765000, ymax = 7865000),
+        crs  = masterRasterCRS
+      )
     )
   )
 
@@ -138,16 +149,15 @@ test_that("Module runs with defaults", {
   expect_true(!is.null(simTest$realAges))
   expect_true(class(simTest$realAges) %in% c("integer", "numeric"))
 
-  # Check that the real ages match the original ages where <3 now equals 3
-  expect_equal(simTest$realAges[simTest$realAges >= 3], simTest$level3DT$ages[simTest$realAges >= 3])
-  expect_true(all(simTest$ages[simTest$realAges < 3] == 3))
+  # Check that the real ages match the original ages where <2 now equals 2
+  expect_equal(simTest$realAges[simTest$realAges >= 2], simTest$level3DT$ages[simTest$realAges >= 2])
+  expect_true(all(simTest$ages[simTest$realAges < 2] == 2))
+
 
   ## Check output 'mySpuDmids' ----
 
   expect_true(!is.null(simTest$mySpuDmids))
   expect_true(inherits(simTest$mySpuDmids, "data.table"))
-
-  expect_equal(nrow(simTest$mySpuDmids), 10)
 
 
   ## Check output 'historicDMtype' ----
@@ -177,12 +187,6 @@ test_that("Module runs with defaults", {
   ## Check output 'disturbanceRasters' -----
 
   expect_true(!is.null(simTest$disturbanceRasters))
-  expect_true(inherits(simTest$disturbanceRasters, "character"))
-
-  # Check at least one file was downloaded
-  expect_true(length(simTest$disturbanceRasters) >= 1)
-  expect_true(all(file.exists(simTest$disturbanceRasters)))
 
 })
-
 

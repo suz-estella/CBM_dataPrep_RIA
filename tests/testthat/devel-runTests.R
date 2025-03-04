@@ -32,4 +32,7 @@
   ## Run module with defaults
   testthat::test_file("tests/testthat/test-1-module_1-defaults.R")
 
+  ## Run module with a smaller study area
+  testthat::test_file("tests/testthat/test-1-module_2-withAOI.R")
+
 
