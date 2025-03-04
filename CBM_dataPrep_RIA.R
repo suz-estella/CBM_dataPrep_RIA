@@ -277,16 +277,20 @@ Init <- function(sim) {
 
     if (inherits(inRast[[rName]], "sf")){
 
+      rasCrop <- postProcess(
+        inRast[[rName]],
+        cropTo    = inRast$masterRaster,
+        projectTo = inRast$masterRaster
+      ) |> Cache()
+
       inRast[[rName]] <- terra::rasterize(
-        postProcess(
-          inRast[[rName]],
-          cropTo    = inRast$masterRaster,
-          projectTo = inRast$masterRaster
-        ) |> Cache(),
+        terra::vect(rasCrop),
         inRast$masterRaster,
         fun   = "min", ## TODO: best method?
         field = names(inRast[[rName]])[[1]]
-      )
+      ) |> Cache()
+
+      rm(rasCrop)
 
     }else{
 
@@ -387,12 +391,20 @@ Init <- function(sim) {
 
   # Get species_id
   gcMeta <- gcMeta |>
-    merge(sim$canfi_species[, .(canfi_species, name)], by = "canfi_species") |>
-    merge(sim$species_tr[, .(species_id, name)], by = "name")
+    merge(data.table::as.data.table(sim$canfi_species)[
+      , .(canfi_species, name)], by = "canfi_species", all.x = TRUE) |>
+    merge(data.table::as.data.table(sim$species_tr)[
+      , .(species_id, name)], by = "name", all.x = TRUE)
 
-  sim$speciesPixelGroup <- unique(sim$spatialDT[, .(pixelGroup, gcids)])[
-    gcMeta, on = .(gcids = gcids), nomatch = NULL]
+  sim$speciesPixelGroup <- merge(
+    unique(sim$spatialDT[, .(pixelGroup, gcids)]),
+    gcMeta, all.x = TRUE)
   setkey(sim$speciesPixelGroup, "pixelGroup")
+
+  unknownSpecies <- unique(subset(sim$speciesPixelGroup, is.na(species_id))$name)
+  if (length(unknownSpecies) > 0) warning(
+    "species_id could not be determined for specie(s): ",
+    paste(shQuote(unknownSpecies), collapse = ", "))
 
 
   ## Create sim$mySpuDmids, sim$historicDMtype, and sim$lastPassDMtype ----
