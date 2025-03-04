@@ -424,22 +424,36 @@ Init <- function(sim) {
 
     # Match user disturbances with CBM-CFS3 disturbance matrices
     userDistSpu <- userDist
-    if (!"spatial_unit_id" %in% names(userDistSpu)){
+    if (!"spatial_unit_id" %in% names(userDist)){
       userDistSpu <- do.call(rbind, lapply(spuIDs, function(spuID){
-        cbind(spatial_unit_id = spuID, userDistSpu)
+        cbind(spatial_unit_id = spuID, userDist)
       }))
+    }else{
+      distCols <- intersect(names(userDist), c("distName", "name", "rasterID", "wholeStand"))
+      userDistSpu <- do.call(rbind, lapply(spuIDs, function(spuID){
+        cbind(spatial_unit_id = spuID, unique(userDist[, distCols, with = FALSE]))
+      }))
+      userDistSpu <- merge(userDistSpu, userDist, by = c(distCols, "spatial_unit_id"), all.x = TRUE)
     }
 
     askUser <- interactive() & !identical(Sys.getenv("TESTTHAT"), "true")
     if (askUser) message(
-      "Prompting user to match input disturbances with CBM-CFS3 disturbance matrix IDs:")
+      "Prompting user to match input disturbances with CBM-CFS3 disturbances:")
 
     sim$mySpuDmids <- do.call(rbind, lapply(1:nrow(userDistSpu), function(i){
 
-      userDistMatch <- CBMutils::spuDistMatch(
-        userDistSpu[i,], listDist = listDist,
-        ask = askUser
-      ) |> Cache()
+      if ("disturbance_type_id" %in% names(userDistSpu)){
+        userDistMatch <- subset(
+          listDist, spatial_unit_id == userDistSpu[i,]$spatial_unit_id &
+            disturbance_type_id == userDistSpu[i,]$disturbance_type_id)
+
+      }else{
+
+        userDistMatch <- CBMutils::spuDistMatch(
+          userDistSpu[i,], listDist = listDist,
+          ask = askUser
+        ) |> Cache()
+      }
 
       cbind(
         userDistSpu[i, setdiff(names(userDist), names(userDistMatch)), with = FALSE],
@@ -792,8 +806,8 @@ Init <- function(sim) {
 
         # Strip matrix IDs
         sim$userDist <- mySpuDmidsCSV[, .(rasterID, wholeStand, spatial_unit_id)]
-        sim$userDist$distName <- sapply(mySpuDmidsCSV$rasterID, switch, `1` = "wildfire", `2` = "clearcut")
-        sim$userDist$distDesc <- mySpuDmidsCSV$distName
+        sim$userDist$disturbance_type_id <- sapply(mySpuDmidsCSV$rasterID, switch, `1` = 1, `2` = 204)
+        # sim$userDist$distDesc <- mySpuDmidsCSV$distName
         # sim$userDist$disturbance_type_id   <- sapply(mySpuDmidsCSV$rasterID, switch, `1` = 1, `2` = 4)
         # sim$userDist$disturbance_matrix_id <- mySpuDmidsCSV$disturbance_matrix_id
       }
