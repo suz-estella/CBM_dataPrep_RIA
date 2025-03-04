@@ -10,6 +10,10 @@ test_that("Module runs with study AOI", {
   dir.create(projectPath)
   withr::local_dir(projectPath)
 
+  # Set master raster CRS
+  masterRasterCRS <- terra::crs(
+    paste(readLines(file.path(spadesTestPaths$testdata, "masterRasterCRS.prj")), collapse = "\n"))
+
   # Set up project
   simInitInput <- SpaDEStestMuffleOutput(
 
@@ -38,13 +42,8 @@ test_that("Module runs with study AOI", {
         vals = 1L,
         res  = 250,
         ext  = c(xmin = -1653000, xmax = -1553000, ymin = 7765000, ymax = 7865000),
-        crs  = terra::crs(
-          reproducible::prepInputs(
-            destinationPath = spadesTestPaths$temp$inputs,
-            url             = "https://drive.google.com/file/d/1h7gK44g64dwcoqhij24F2K54hs5e35Ci",
-            targetFile      = "RIA_rtm.tif",
-            fun             = terra::rast
-          )))
+        crs  = masterRasterCRS
+      )
     )
   )
 
