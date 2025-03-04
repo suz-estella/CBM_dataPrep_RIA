@@ -17,6 +17,9 @@ SpaDEStestSetGlobalOptions()
 # Set up testing directories
 spadesTestPaths <- SpaDEStestSetUpDirectories(require = "googledrive")
 
+## Store cache in RProject
+if (!testthat::is_testing()) spadesTestPaths$temp$cache <- file.path(spadesTestPaths$RProj, "tests/cache")
+
 
 ## Download standard inputs that are usually provided by CBM_defaults or CBM_vol2biomass.
 ## test data provided where creation of these outputs is more complex than a simple downloads
