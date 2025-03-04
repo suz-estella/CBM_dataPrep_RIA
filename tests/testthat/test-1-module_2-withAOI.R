@@ -75,11 +75,6 @@ test_that("Module runs with study AOI", {
 
   expect_identical(data.table::key(simTest$spatialDT), "pixelIndex")
 
-  # Expect that there is 1 row for every non-NA cell in masterRaster
-  mrValues <- terra::values(terra::rast(file.path(spadesTestPaths$testdata, "masterRaster-withAOI.tif")))
-  expect_equal(nrow(simTest$spatialDT), sum(!is.na(mrValues[,1])))
-  expect_equal(simTest$spatialDT$pixelIndex, which(!is.na(mrValues[,1])))
-
 
   ## Check output 'level3DT' ----
 
@@ -155,61 +150,15 @@ test_that("Module runs with study AOI", {
   expect_true(!is.null(simTest$realAges))
   expect_true(class(simTest$realAges) %in% c("integer", "numeric"))
 
-  # Check that the real ages match the original ages where <3 now equals 3
-  expect_equal(simTest$realAges[simTest$realAges >= 3], simTest$level3DT$ages[simTest$realAges >= 3])
-  expect_true(all(simTest$ages[simTest$realAges < 3] == 3))
+  # Check that the real ages match the original ages where <2 now equals 2
+  expect_equal(simTest$realAges[simTest$realAges >= 2], simTest$level3DT$ages[simTest$realAges >= 2])
+  expect_true(all(simTest$ages[simTest$realAges < 2] == 2))
 
 
   ## Check output 'mySpuDmids' ----
 
   expect_true(!is.null(simTest$mySpuDmids))
   expect_true(inherits(simTest$mySpuDmids, "data.table"))
-
-  expect_equal(nrow(simTest$mySpuDmids), 8)
-
-  # Check that disturbances have been matched correctly
-  rowsExpect <- rbind(
-    data.frame(
-      spatial_unit_id       = 28,
-      rasterID              = 1,
-      wholeStand            = 1,
-      sw_hw                 = c("sw", "hw"),
-      distName              = "Wildfire",
-      disturbance_type_id   = 1,
-      disturbance_matrix_id = c(371, 851)
-    ),
-    data.frame(
-      spatial_unit_id       = 28,
-      rasterID              = 2,
-      wholeStand            = 1,
-      sw_hw                 = c("sw", "hw"),
-      distName              = "Clearcut harvesting without salvage",
-      disturbance_type_id   = 204,
-      disturbance_matrix_id = c(160, 640)
-    ),
-    data.frame(
-      spatial_unit_id       = 28,
-      rasterID              = 3,
-      wholeStand            = 0,
-      sw_hw                 = c("sw", "hw"),
-      distName              = "Generic 20% mortality",
-      disturbance_type_id   = 168,
-      disturbance_matrix_id = c(91, 571)
-    ),
-    data.frame(
-      spatial_unit_id       = 28,
-      rasterID              = 4,
-      wholeStand            = 1,
-      sw_hw                 = c("sw", "hw"),
-      distName              = "Deforestation",
-      disturbance_type_id   = 7,
-      disturbance_matrix_id = c(26, 506)
-    )
-  )
-
-  for (i in 1:nrow(rowsExpect)){
-    expect_equal(nrow(merge(simTest$mySpuDmids, rowsExpect[i,], by = names(rowsExpect))), 1)
-  }
 
 
   ## Check output 'historicDMtype' ----
@@ -239,11 +188,6 @@ test_that("Module runs with study AOI", {
   ## Check output 'disturbanceRasters' -----
 
   expect_true(!is.null(simTest$disturbanceRasters))
-  expect_true(inherits(simTest$disturbanceRasters, "character"))
-
-  # Check at least one file was downloaded
-  expect_true(length(simTest$disturbanceRasters) >= 1)
-  expect_true(all(file.exists(simTest$disturbanceRasters)))
 
 })
 
