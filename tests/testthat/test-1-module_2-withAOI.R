@@ -1,12 +1,12 @@
 
 if (!testthat::is_testing()) source(testthat::test_path("setup.R"))
 
-test_that("Module runs with defaults", {
+test_that("Module runs with study AOI", {
 
   ## Run simInit and spades ----
 
   # Set project path
-  projectPath <- file.path(spadesTestPaths$temp$projects, "1-defaults")
+  projectPath <- file.path(spadesTestPaths$temp$projects, "2-withAOI")
   dir.create(projectPath)
   withr::local_dir(projectPath)
 
@@ -25,14 +25,26 @@ test_that("Module runs with defaults", {
         outputPath  = file.path(projectPath, "outputs")
       ),
 
-      require = "sf",
+      require = c("sf", "terra", "reproducible"),
 
       dbPath     = file.path(spadesTestPaths$temp$inputs, "dbPath.db"),
       ecoLocator = sf::st_read(file.path(spadesTestPaths$testdata, "ecoLocator.shp"), quiet = TRUE),
       spuLocator = sf::st_read(file.path(spadesTestPaths$testdata, "spuLocator.shp"), quiet = TRUE),
       dMatrixAssociation = read.csv(file.path(spadesTestPaths$testdata, "disturbance_matrix_association.csv")),
       spinupSQL  = read.csv(file.path(spadesTestPaths$testdata, "spinupSQL.csv")),
-      species_tr = read.csv(file.path(spadesTestPaths$testdata, "species_tr.csv"))
+      species_tr = read.csv(file.path(spadesTestPaths$testdata, "species_tr.csv")),
+
+      masterRaster = terra::rast(
+        vals = 1L,
+        res  = 250,
+        ext  = c(xmin = -1653000, xmax = -1553000, ymin = 7765000, ymax = 7865000),
+        crs  = terra::crs(
+          reproducible::prepInputs(
+            destinationPath = spadesTestPaths$temp$inputs,
+            url             = "https://drive.google.com/file/d/1h7gK44g64dwcoqhij24F2K54hs5e35Ci",
+            targetFile      = "RIA_rtm.tif",
+            fun             = terra::rast
+          )))
     )
   )
 
@@ -62,6 +74,11 @@ test_that("Module runs with defaults", {
   }
 
   expect_identical(data.table::key(simTest$spatialDT), "pixelIndex")
+
+  # Expect that there is 1 row for every non-NA cell in masterRaster
+  mrValues <- terra::values(terra::rast(file.path(spadesTestPaths$testdata, "masterRaster-withAOI.tif")))
+  expect_equal(nrow(simTest$spatialDT), sum(!is.na(mrValues[,1])))
+  expect_equal(simTest$spatialDT$pixelIndex, which(!is.na(mrValues[,1])))
 
 
   ## Check output 'level3DT' ----
@@ -142,12 +159,57 @@ test_that("Module runs with defaults", {
   expect_equal(simTest$realAges[simTest$realAges >= 3], simTest$level3DT$ages[simTest$realAges >= 3])
   expect_true(all(simTest$ages[simTest$realAges < 3] == 3))
 
+
   ## Check output 'mySpuDmids' ----
 
   expect_true(!is.null(simTest$mySpuDmids))
   expect_true(inherits(simTest$mySpuDmids, "data.table"))
 
-  expect_equal(nrow(simTest$mySpuDmids), 10)
+  expect_equal(nrow(simTest$mySpuDmids), 8)
+
+  # Check that disturbances have been matched correctly
+  rowsExpect <- rbind(
+    data.frame(
+      spatial_unit_id       = 28,
+      rasterID              = 1,
+      wholeStand            = 1,
+      sw_hw                 = c("sw", "hw"),
+      distName              = "Wildfire",
+      disturbance_type_id   = 1,
+      disturbance_matrix_id = c(371, 851)
+    ),
+    data.frame(
+      spatial_unit_id       = 28,
+      rasterID              = 2,
+      wholeStand            = 1,
+      sw_hw                 = c("sw", "hw"),
+      distName              = "Clearcut harvesting without salvage",
+      disturbance_type_id   = 204,
+      disturbance_matrix_id = c(160, 640)
+    ),
+    data.frame(
+      spatial_unit_id       = 28,
+      rasterID              = 3,
+      wholeStand            = 0,
+      sw_hw                 = c("sw", "hw"),
+      distName              = "Generic 20% mortality",
+      disturbance_type_id   = 168,
+      disturbance_matrix_id = c(91, 571)
+    ),
+    data.frame(
+      spatial_unit_id       = 28,
+      rasterID              = 4,
+      wholeStand            = 1,
+      sw_hw                 = c("sw", "hw"),
+      distName              = "Deforestation",
+      disturbance_type_id   = 7,
+      disturbance_matrix_id = c(26, 506)
+    )
+  )
+
+  for (i in 1:nrow(rowsExpect)){
+    expect_equal(nrow(merge(simTest$mySpuDmids, rowsExpect[i,], by = names(rowsExpect))), 1)
+  }
 
 
   ## Check output 'historicDMtype' ----
@@ -184,5 +246,4 @@ test_that("Module runs with defaults", {
   expect_true(all(file.exists(simTest$disturbanceRasters)))
 
 })
-
 

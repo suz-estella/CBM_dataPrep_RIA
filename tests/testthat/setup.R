@@ -15,9 +15,21 @@ source(tempScript)
 SpaDEStestSetGlobalOptions()
 
 # Set up testing directories
-spadesTestPaths <- SpaDEStestSetUpDirectories(copyModule = FALSE)
+spadesTestPaths <- SpaDEStestSetUpDirectories(require = "googledrive")
+
+## Store cache in RProject
+if (!testthat::is_testing()) spadesTestPaths$temp$cache <- file.path(spadesTestPaths$RProj, "tests/cache")
 
 
-# Authorize Google Drive
-googledrive::drive_auth(path = if (Sys.getenv("GOOGLE_AUTH") != "") Sys.getenv("GOOGLE_AUTH"))
+## Download standard inputs that are usually provided by CBM_defaults or CBM_vol2biomass.
+## test data provided where creation of these outputs is more complex than a simple downloads
+
+# Download CBM-CFS3 database usually provided by CBM_defaults
+download.file(
+  url      = "https://raw.githubusercontent.com/cat-cfs/libcbm_py/main/libcbm/resources/cbm_defaults_db/cbm_defaults_v1.2.8340.362.db",
+  destfile = file.path(spadesTestPaths$temp$inputs, "dbPath.db"),
+  mode     = "wb",
+  quiet    = TRUE
+)
+
 
