@@ -23,11 +23,13 @@ spadesTestPaths <- SpaDEStestSetUpDirectories(require = "googledrive")
 ## test data provided where creation of these outputs is more complex than a simple downloads
 
 # Download CBM-CFS3 database usually provided by CBM_defaults
-download.file(
-  url      = "https://raw.githubusercontent.com/cat-cfs/libcbm_py/main/libcbm/resources/cbm_defaults_db/cbm_defaults_v1.2.8340.362.db",
-  destfile = file.path(spadesTestPaths$temp$inputs, "dbPath.db"),
-  mode     = "wb",
-  quiet    = TRUE
-)
+if (!file.exists(file.path(spadesTestPaths$temp$inputs, "cbm_defaults_v1.2.8340.362.db"))){
+  download.file(
+    url      = "https://raw.githubusercontent.com/cat-cfs/libcbm_py/main/libcbm/resources/cbm_defaults_db/cbm_defaults_v1.2.8340.362.db",
+    destfile = file.path(spadesTestPaths$temp$inputs, "cbm_defaults_v1.2.8340.362.db"),
+    mode     = "wb",
+    quiet    = TRUE
+  )
+}
 
 
