@@ -98,10 +98,10 @@ defineModule(sim, list(
       desc = paste(
         "Required input to CBM_core.",
         "If not specified elsewhere, the default source URLs are provided.",
-        "The defaults were made from the Landsat-derived annual fire and harvest layers",
-        "as described in: ",
+        "The defaults were made from the Landsat-derived annual fire and harvest layers as described in: ",
         "Hermosilla, T., M.A. Wulder, J.C. White, N.C. Coops, G.W. Hobart, L.B. Campbell, (2016).",
-        "Mass data processing of time series Landsat imagery: pixels to data products for forest monitoring. International Journal of Digital Earth. 9(11), 1035-1054."
+        "Mass data processing of time series Landsat imagery: pixels to data products for forest monitoring. ",
+        "International Journal of Digital Earth. 9(11), 1035-1054."
       )),
     expectsInput(
       objectName = "disturbanceRastersURL", objectClass = "character",
