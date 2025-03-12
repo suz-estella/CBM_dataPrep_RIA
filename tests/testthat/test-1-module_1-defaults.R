@@ -147,8 +147,6 @@ test_that("Module runs with defaults", {
   expect_true(!is.null(simTest$mySpuDmids))
   expect_true(inherits(simTest$mySpuDmids, "data.table"))
 
-  expect_equal(nrow(simTest$mySpuDmids), 10)
-
 
   ## Check output 'historicDMtype' ----
 

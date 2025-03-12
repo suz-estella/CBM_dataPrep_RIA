@@ -20,7 +20,6 @@ spadesTestPaths <- SpaDEStestSetUpDirectories(require = "googledrive")
 
 
 ## Download standard inputs that are usually provided by CBM_defaults or CBM_vol2biomass.
-## test data provided where creation of these outputs is more complex than a simple downloads
 
 # Download CBM-CFS3 database usually provided by CBM_defaults
 if (!file.exists(file.path(spadesTestPaths$temp$inputs, "cbm_defaults_v1.2.8340.362.db"))){
