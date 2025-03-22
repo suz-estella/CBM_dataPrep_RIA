@@ -5,6 +5,9 @@ test_that("Module runs with defaults", {
 
   ## Run simInit and spades ----
 
+  ## Only run this test manually
+  testthat::skip_if(testthat::is_testing())
+
   # Set project path
   projectPath <- file.path(spadesTestPaths$temp$projects, "1-defaults")
   dir.create(projectPath)
@@ -14,6 +17,8 @@ test_that("Module runs with defaults", {
   simInitInput <- SpaDEStestMuffleOutput(
 
     SpaDES.project::setupProject(
+
+      times = list(start = 2015, end = 2015),
 
       modules = "CBM_dataPrep_RIA",
       paths   = list(
@@ -142,10 +147,30 @@ test_that("Module runs with defaults", {
   expect_equal(simTest$realAges[simTest$realAges >= 3], simTest$level3DT$ages[simTest$realAges >= 3])
   expect_true(all(simTest$ages[simTest$realAges < 3] == 3))
 
-  ## Check output 'mySpuDmids' ----
 
-  expect_true(!is.null(simTest$mySpuDmids))
-  expect_true(inherits(simTest$mySpuDmids, "data.table"))
+  ## Check output 'disturbanceEvents' -----
+
+  expect_true(!is.null(simTest$disturbanceEvents))
+  expect_true(inherits(simTest$disturbanceEvents, "data.table"))
+
+  for (colName in c("pixelIndex", "year", "eventID")){
+    expect_true(colName %in% names(simTest$disturbanceEvents))
+    expect_true(is.integer(simTest$disturbanceEvents[[colName]]))
+    expect_true(all(!is.na(simTest$disturbanceEvents[[colName]])))
+  }
+
+  expect_true(all(simTest$disturbanceEvents$pixelIndex %in% simTest$allPixDT$pixelIndex))
+  expect_true(all(simTest$disturbanceEvents$year       %in% start(simTest):end(simTest)))
+
+  distEventsSum <- Copy(simTest$disturbanceEvents)[, .(count = .N), by = c("year", "eventID")]
+  expect_equal(subset(distEventsSum, year == "2015" & eventID == 1)$count, 27716)
+  expect_equal(subset(distEventsSum, year == "2015" & eventID == 2)$count, 7293)
+
+
+  ## Check output 'disturbanceMeta' ----
+
+  expect_true(!is.null(simTest$disturbanceMeta))
+  expect_true(inherits(simTest$disturbanceMeta, "data.table"))
 
 
   ## Check output 'historicDMtype' ----
@@ -170,16 +195,6 @@ test_that("Module runs with defaults", {
 
   # Check that there are no NAs
   expect_true(all(!is.na(simTest$lastPassDMtype)))
-
-
-  ## Check output 'disturbanceRasters' -----
-
-  expect_true(!is.null(simTest$disturbanceRasters))
-  expect_true(inherits(simTest$disturbanceRasters, "character"))
-
-  # Check at least one file was downloaded
-  expect_true(length(simTest$disturbanceRasters) >= 1)
-  expect_true(all(file.exists(simTest$disturbanceRasters)))
 
 })
 
