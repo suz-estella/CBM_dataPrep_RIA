@@ -19,6 +19,8 @@ test_that("Module runs with study AOI", {
 
     SpaDES.project::setupProject(
 
+      times = list(start = 2015, end = 2015),
+
       modules = "CBM_dataPrep_RIA",
       paths   = list(
         projectPath = projectPath,
@@ -154,10 +156,29 @@ test_that("Module runs with study AOI", {
   expect_true(all(simTest$ages[simTest$realAges < 2] == 2))
 
 
-  ## Check output 'mySpuDmids' ----
+  ## Check output 'disturbanceEvents' -----
 
-  expect_true(!is.null(simTest$mySpuDmids))
-  expect_true(inherits(simTest$mySpuDmids, "data.table"))
+  expect_true(!is.null(simTest$disturbanceEvents))
+  expect_true(inherits(simTest$disturbanceEvents, "data.table"))
+
+  for (colName in c("pixelIndex", "year", "eventID")){
+    expect_true(colName %in% names(simTest$disturbanceEvents))
+    expect_true(is.integer(simTest$disturbanceEvents[[colName]]))
+    expect_true(all(!is.na(simTest$disturbanceEvents[[colName]])))
+  }
+
+  expect_true(all(simTest$disturbanceEvents$pixelIndex %in% simTest$allPixDT$pixelIndex))
+  expect_true(all(simTest$disturbanceEvents$year       %in% start(simTest):end(simTest)))
+
+  distEventsSum <- Copy(simTest$disturbanceEvents)[, .(count = .N), by = c("year", "eventID")]
+  expect_equal(subset(distEventsSum, year == "2015" & eventID == 1)$count, 62)
+  expect_equal(subset(distEventsSum, year == "2015" & eventID == 2)$count, 174)
+
+
+  ## Check output 'disturbanceMeta' ----
+
+  expect_true(!is.null(simTest$disturbanceMeta))
+  expect_true(inherits(simTest$disturbanceMeta, "data.table"))
 
 
   ## Check output 'historicDMtype' ----
@@ -182,12 +203,6 @@ test_that("Module runs with study AOI", {
 
   # Check that there are no NAs
   expect_true(all(!is.na(simTest$lastPassDMtype)))
-
-
-  ## Check output 'disturbanceRasters' -----
-
-  expect_true(!is.null(simTest$disturbanceRasters))
-
 
 })
 
