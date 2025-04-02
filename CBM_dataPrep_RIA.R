@@ -725,7 +725,8 @@ Init <- function(sim) {
         filename1   = "VRI_3Cols.zip",
         targetFile  = "VRI_3Cols.shp",
         alsoExtract = "similar",
-        fun         = NA
+        fun         = NA,
+        archive = NA
       )
 
       sim$gcIndexRaster <- sf::st_read(
